@@ -29,13 +29,13 @@ import java.util.*;
 public class GithubEventsService {
 
 	private EsConfig esConfig;
-	private GithubApiServiceOAuth2Config githubApiServiceOAuth2Config;
+	private GithubApiOAuth2Config githubApiOAuth2Config;
 	private ObjectMapper objectMapper;
 
 	@Autowired
-	private GithubEventsService(EsConfig esConfig, GithubApiServiceOAuth2Config githubApiServiceOAuth2Config, ObjectMapper objectMapper) {
+	private GithubEventsService(EsConfig esConfig, GithubApiOAuth2Config githubApiOAuth2Config, ObjectMapper objectMapper) {
 		this.esConfig = esConfig;
-		this.githubApiServiceOAuth2Config = githubApiServiceOAuth2Config;
+		this.githubApiOAuth2Config = githubApiOAuth2Config;
 		this.objectMapper = objectMapper;
 	}
 
@@ -54,7 +54,7 @@ public class GithubEventsService {
 
 		log.info("-------------------------------------------");
 
-		RepositoryService repoService = (RepositoryService) githubApiServiceOAuth2Config.serviceOAuth(new RepositoryService());
+		RepositoryService repoService = (RepositoryService) githubApiOAuth2Config.serviceOAuth(new RepositoryService());
 		Repository repo = new Repository();
 		try {
 			repo = repoService.getRepository("Fisheep1207", "Fisheep1207.github.io");
@@ -69,7 +69,7 @@ public class GithubEventsService {
 	public void saveGithubEventsDocument() throws IOException {
 		createGithubEventsIndex();
 
-		EventService eventService = (EventService) githubApiServiceOAuth2Config.serviceOAuth(new EventService());
+		EventService eventService = (EventService) githubApiOAuth2Config.serviceOAuth(new EventService());
 		PageIterator<Event> eventCollection = eventService.pagePublicEvents();
 
 		for (Collection<Event> event : eventCollection) {

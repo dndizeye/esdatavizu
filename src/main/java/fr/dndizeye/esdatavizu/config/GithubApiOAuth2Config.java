@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class GithubApiServiceOAuth2Config {
+public class GithubApiOAuth2Config {
 
 	@Value("${github.pta}")
 	private String oAuth2Token;

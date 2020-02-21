@@ -2,7 +2,7 @@ package fr.dndizeye.esdatavizu.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.dndizeye.esdatavizu.config.EsConfig;
-import fr.dndizeye.esdatavizu.config.GithubApiServiceOAuth2Config;
+import fr.dndizeye.esdatavizu.config.GithubApiOAuth2Config;
 import fr.dndizeye.esdatavizu.model.GithubEventsDocument;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.egit.github.core.Repository;

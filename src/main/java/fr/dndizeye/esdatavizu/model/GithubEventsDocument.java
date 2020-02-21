@@ -14,6 +14,10 @@ public class GithubEventsDocument {
 	private String eventType;
 	private Date createdAt;
 
+	public GithubEventsDocument() {
+
+    }
+
 	public GithubEventsDocument(String id, String eventType, Date createdAt) {
 		this.id = id;
 		this.eventType = eventType;

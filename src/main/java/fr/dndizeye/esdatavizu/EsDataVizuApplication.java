@@ -1,7 +1,5 @@
 package fr.dndizeye.esdatavizu;
 
-import fr.dndizeye.esdatavizu.config.EsConfig;
-import fr.dndizeye.esdatavizu.config.GithubApiServiceOAuth2Config;
 import fr.dndizeye.esdatavizu.service.GithubEventsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -21,7 +19,7 @@ public class EsDataVizuApplication {
 	public static void main(String[] args) throws IOException {
 
 		SpringApplication.run(EsDataVizuApplication.class, args);
-		githubEventsService.githubEventsDocumentFromGithubApi();
+		githubEventsService.saveGithubEventsDocument();
 
 	/*
 		EventService eventService = new EventService();

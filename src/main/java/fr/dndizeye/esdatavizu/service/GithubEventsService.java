@@ -18,6 +18,7 @@ import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.common.settings.Settings;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -31,7 +32,7 @@ public class GithubEventsService {
 	private GithubApiOAuth2Config githubApiOAuth2Config;
 	private ObjectMapper objectMapper;
 
-	private static final String INDICES_NAME = "githubevents";
+	private static final String INDICES_NAME = "githubevents-index-storage";
 
 	@Autowired
 	private GithubEventsService(EsConfig esConfig, GithubApiOAuth2Config githubApiOAuth2Config, ObjectMapper objectMapper) {
@@ -40,35 +41,49 @@ public class GithubEventsService {
 		this.objectMapper = objectMapper;
 	}
 
+	@Scheduled(fixedRate = 10000)
 	public void saveGithubEventsDocument() throws IOException {
 		createGithubEventsIndex();
 
+		log.info(">> SAVE INDEX, OPERATION STARTS");
 		EventService eventService = (EventService) githubApiOAuth2Config.serviceOAuth(new EventService());
 		PageIterator<Event> eventCollection = eventService.pagePublicEvents();
 
+		int counter = 0;
 		for (Collection<Event> event : eventCollection) {
-			GithubEventsDocument githubEventsDocument = createGithubEventsDocumentFromGithubApi(event);
-			Map<String, Object> githubEventsDocumentMapper = objectMapper.convertValue(githubEventsDocument, Map.class);
-            IndexRequest indexRequest = new IndexRequest(INDICES_NAME).id(githubEventsDocument.getId()).source(githubEventsDocumentMapper);
-            //IndexResponse indexResponse = esConfig.esClient().index(indexRequest, RequestOptions.DEFAULT);
-            //log.info("Name {}", indexResponse.getResult().name());
+			log.info(">> EVENT COLLECTION SIZE = {}", event.size());
+			log.info("EVENTS PAGE {}", counter + 1);
+			event.stream().forEach(ev -> {
+				GithubEventsDocument githubEventsDocument = createGithubEventsDocumentFromGithubApi(event);
+				Map<String, Object> githubEventsDocumentMapper = objectMapper.convertValue(githubEventsDocument, Map.class);
+				IndexRequest indexRequest = new IndexRequest(INDICES_NAME).id(githubEventsDocument.getId()).source(githubEventsDocumentMapper);
+				try {
+					IndexResponse indexResponse = esConfig.esClient().index(indexRequest, RequestOptions.DEFAULT);
+				} catch (IOException e) {
+					log.error("Index Response Exception", e);
+				}
+			});
+			counter++;
 		}
+		log.info(">> SAVE INDEX, OPERATION  ENDS");
+		log.info("-------------------------------------------------------------------");
 	}
 
-	private GithubEventsDocument createGithubEventsDocumentFromGithubApi (Collection<Event> events) {
-        GithubEventsDocument githubEventsDocument = new GithubEventsDocument();
+	private GithubEventsDocument createGithubEventsDocumentFromGithubApi(Collection<Event> events) {
+		GithubEventsDocument githubEventsDocument = new GithubEventsDocument();
 		UUID uuid = UUID.randomUUID();
 
-        for (Event event : events) {
-            githubEventsDocument = new GithubEventsDocument(uuid.toString(), event.getType(), event.getCreatedAt());
-        }
-        return githubEventsDocument;
+		for (Event event : events) {
+			githubEventsDocument = new GithubEventsDocument(uuid.toString(), event.getType(), event.getCreatedAt());
+		}
+		return githubEventsDocument;
 	}
 
 	private void createGithubEventsIndex() throws IOException {
+		log.info(">> CHECK IF INDEX EXISTS, OPERATION STARTS");
 		GetIndexRequest getIndexrequest = new GetIndexRequest(INDICES_NAME);
 		boolean exists = esConfig.esClient().indices().exists(getIndexrequest, RequestOptions.DEFAULT);
-		if(!exists) {
+		if (!exists) {
 			CreateIndexRequest createIndexRequest = new CreateIndexRequest(INDICES_NAME);
 
 			createIndexRequest.settings(Settings.builder()
@@ -79,7 +94,7 @@ public class GithubEventsService {
 			Map<String, Object> id = new HashMap<>();
 			id.put("type", "text");
 			Map<String, Object> eventType = new HashMap<>();
-			eventType.put("type", "text");
+			eventType.put("type", "keyword");
 			Map<String, Object> createdAt = new HashMap<>();
 			createdAt.put("type", "date");
 			Map<String, Object> properties = new HashMap<>();
@@ -92,11 +107,11 @@ public class GithubEventsService {
 
 			CreateIndexResponse createIndexResponse = esConfig.esClient().indices().create(createIndexRequest, RequestOptions.DEFAULT);
 			boolean acknowledged = createIndexResponse.isAcknowledged();
-			log.info("Index creation = {}", acknowledged);
+			log.info(">> INDEX CREATED = {}", acknowledged);
 		} else {
-            GetIndexResponse getIndexResponse = esConfig.esClient().indices().get(getIndexrequest, RequestOptions.DEFAULT);
-            log.info("Index githubevents exists = {}", ArrayUtils.contains(getIndexResponse.getIndices(), INDICES_NAME));
-        }
+			GetIndexResponse getIndexResponse = esConfig.esClient().indices().get(getIndexrequest, RequestOptions.DEFAULT);
+			log.info(">> INDEX EXISTS = {}", ArrayUtils.contains(getIndexResponse.getIndices(), INDICES_NAME));
+		}
 	}
 
 }

@@ -1,1 +1,1 @@
-Demo project for ES Index Data Visualization
+Demo project for Data Visualization with Elastic (ELK) Stack
